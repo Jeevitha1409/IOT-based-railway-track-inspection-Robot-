@@ -1,0 +1,54 @@
+import RPi.GPIO as GPIO
+import time
+import requests
+
+class RailwayTrackInspectionRobot:
+    def __init__(self):
+        self.ultrasonic_sensor = 17
+        self.infrared_sensor = 23
+        self.buzzer = 25
+        self.camera = 0
+
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.ultrasonic_sensor, GPIO.IN)
+        GPIO.setup(self.infrared_sensor, GPIO.IN)
+        GPIO.setup(self.buzzer, GPIO.OUT)
+
+    def detect_defects(self):
+        try:
+            ultrasonic_data = GPIO.input(self.ultrasonic_sensor)
+            infrared_data = GPIO.input(self.infrared_sensor)
+            if ultrasonic_data == 1 or infrared_data == 1:
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"Error detecting defects: {e}")
+            return None
+
+    def send_data(self, defect_status):
+        try:
+            url = "http://example.com/railway_track_inspection"
+            data = {"defect_status": defect_status}
+            response = requests.post(url, json=data)
+            if response.status_code == 200:
+                print("Data sent successfully")
+            else:
+                print(f"Error sending data: {response.status_code}")
+        except Exception as e:
+            print(f"Error sending data: {e}")
+
+    def run(self):
+        while True:
+            defect_status = self.detect_defects()
+            if defect_status is not None:
+                self.send_data(defect_status)
+                if defect_status:
+                    GPIO.output(self.buzzer, GPIO.HIGH)
+                else:
+                    GPIO.output(self.buzzer, GPIO.LOW)
+            time.sleep(1)
+
+if __name__ == "__main__":
+    robot = RailwayTrackInspectionRobot()
+    robot.run()
